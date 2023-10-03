@@ -1,25 +1,38 @@
 from Bench import Bench
 from Card import Card
 from Consts import bcolors, COLORS, COLOR_NAME
+from StatsForNerds import calculateNextCardStats, calculateReturnPointStats
 from Player_IDK import PlayerIDK
 import random
 
 class Board:
     def __init__(self, players=3):
+        self.stacks: list[list[Card]] = [[],[],[]]
+        self.reverse: bool = False
+        self.deck: list[Card] = self.buildDeck()
+        self.discard: list[Card] = []
+
         self.pTurn: int = 0
         self.players: int = players
         self.playerAI = []
-        self.deck: list[Card] = self.buildDeck()
-        self.discard: list[Card] = []
         self.playerInfo: list[Bench] = []
+        self.playerStackReturnStats = []
         for i in range(players):
             self.playerAI.append(PlayerIDK())
             self.playerInfo.append(Bench())
+            self.playerStackReturnStats.append(calculateReturnPointStats(self, i))
+
         self.resetRound()
+
+    def getReturnStats(self, playerNum:int=None):
+        if playerNum == None:
+            playerNum = self.pTurn
+        return self.playerStackReturnStats[playerNum]
 
     def resetRound(self):
         self.stacks: list[list[Card]] = [[],[],[]]
         self.reverse: bool = False
+        self.nextCardStats = calculateNextCardStats(self)
 
     def rollDie(self):
         return random.choice(['Purple', 'Blue', 'Green', 'Yellow', 'Red', 'None'])
@@ -30,12 +43,22 @@ class Board:
         toReturn = self.deck[0]
         self.deck.remove(toReturn)
         self.discard.append(toReturn)
+        self.nextCardStats = calculateNextCardStats(self)
         return toReturn
     
+    def canPlaceInStack(self, stackIndex, card):
+        if stackIndex >= 3:
+            return None
+        matches = [c for c in self.stacks[stackIndex] if c.match(card)]
+        return len(matches) == 0
+
     def placeStack(self, card: Card, index: int):
         if index > 2:
             return
         self.stacks[index].append(card)
+        self.nextCardStats = calculateNextCardStats(self)
+        for i in range(self.players):
+            self.playerStackReturnStats[i] = calculateReturnPointStats(self, i)
 
     def ApplyStack(self, stackIndex: int, playerNum: int):
         newPoints = 0

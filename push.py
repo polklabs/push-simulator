@@ -59,7 +59,7 @@ def clearBoard():
     print(bcolors.ENDC)
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def drawBoard(board: Board, nextCard: Card=None, returnStats:dict=None, stats:dict=None):
+def drawBoard(board: Board, playerTurn:int, nextCard: Card=None):
     clearBoard()
     x = PrettyTable()
     columns = ['Points']
@@ -81,47 +81,12 @@ def drawBoard(board: Board, nextCard: Card=None, returnStats:dict=None, stats:di
     print(f'\nPlayer {board.pTurn+1}\'s Turn:')
     printStacks(board)
 
-    if returnStats != None:
-        printReturn(returnStats)
-
-    if stats != None:
-        printStats(stats)
+    printReturn(board.getReturnStats(playerTurn))
+    printStats(board.nextCardStats)
 
     if nextCard != None:
         print('\nCard Drawn')
         printCard(nextCard)
-
-def calculateStats(board: Board):
-    dl = len(board.deck)
-    data = dict()
-    if dl == 0:
-        data['SWITCH'] = 0
-    else:
-        alreadyDrawn = len([c for c in board.discard if c.type == 'switch'])
-        data['SWITCH'] = round(((12-alreadyDrawn)/dl)*100,2)
-
-    if dl == 0:
-        data['ROLL'] = 0
-    else:
-        alreadyDrawn = len([c for c in board.discard if c.type == 'roll'])
-        data['ROLL'] = round(((18-alreadyDrawn)/dl)*100,2)
-
-    if dl == 0:
-        data['NUM'] = 0
-    else:
-        alreadyDrawn = len([c for c in board.discard if c.type == 'num'])
-        data['NUM'] = round(((90-alreadyDrawn)/dl)*100,2)
-
-    for n in range(6):
-        for c in range(len(COLORS)):
-            if dl == 0:
-                data[f'{n+1}_{COLOR_NAME[c]}'] = 0
-            else:
-                alreadyDrawn = len([card for card in board.discard if card.color == COLORS[c] and card.number == n+1])
-                data[f'{n+1}_{COLOR_NAME[c]}'] = round(((3-alreadyDrawn)/dl)*100, 2)      
-
-    data['BUST'] = chanceToBust(board)
-    return data
 
 def printStats(data):
     x = PrettyTable()
@@ -142,33 +107,6 @@ def printStats(data):
     x.add_row(['BUST', data['BUST']]+['']*6)
     print(x)
 
-# Calculates the expected return value of every stack
-def calculateReturn(board: Board, playerNum: int):
-    data = [dict(), dict(), dict(), playerNum]
-    for i in range(3):
-        points = [p for p in board.playerInfo[playerNum].points]
-        totalPoints = sum([p.number for p in board.stacks[i] if p.type == 'num'])
-        for card in board.stacks[i]:
-            if card.type == 'num':
-                points[COLORS.index(card.color)] += card.number
-        hasRollCard = len([c for c in board.stacks[i] if c.type == 'roll']) > 0
-        if hasRollCard == True:
-            maxPoints = max(points)
-
-            t = 0
-            for x in range(5):
-                t += points[x]
-            t = t/6
-        else:
-            maxPoints = 0
-            t = 0
-
-        data[i]['average'] = round(totalPoints - t,2)
-        data[i]['min'] = totalPoints - maxPoints
-        data[i]['max'] = totalPoints # Always totalPoints cause we're assuming I never get a bad roll
-        # print(totalPoints)
-    return data
-
 def printReturn(stats):
     x = PrettyTable()
     x.field_names = [f'Player {stats[-1]+1}', 'Stack 1', 'Stack 2', 'Stack 3']
@@ -177,39 +115,11 @@ def printReturn(stats):
     x.add_row(['Max Gain']+ [s['max'] for s in stats[:-1]])
     print(x)
 
-def canPlaceInStack(board, stackIndex, card):
-    if stackIndex >= 3:
-        return None
-    matches = [c for c in board.stacks[stackIndex] if c.match(card)]
-    return len(matches) == 0
-
-def chanceToBust(board: Board):
-    if len(board.deck) == 0:
-        return 0
-
-    smallestStack = min([len(x) for x in board.stacks])
-    # smallestStack = min(len(board.stacks[0]),len(board.stacks[1]),len(board.stacks[2]))
-    if smallestStack == 0:
-        return 0
-    
-    toBust = 0
-    for c in board.deck:
-        for i in range(4):
-            if i<3 and canPlaceInStack(board, i, c):
-                break
-        if i == 3:
-            # print(c.color, c.number, bcolors.ENDC)
-            toBust += 1
-
-    return round((toBust/len(board.deck))*100, 2)
-
 def Draw(board: Board, ai):
     nextCard = board.drawCard()
     if nextCard == None:
         return False
-    returnStats = calculateReturn(board, board.pTurn)
-    stats = calculateStats(board)
-    drawBoard(board, nextCard, returnStats=returnStats)
+    drawBoard(board, board.pTurn, nextCard)
     print(f'\nPlayer {board.pTurn+1} is choosing a stack for card')
     time.sleep(2 * timescale)
 
@@ -218,22 +128,19 @@ def Draw(board: Board, ai):
     else:
         availableStacks = []
         for i in range(3):
-            if canPlaceInStack(board, i, nextCard):
+            if board.canPlaceInStack(i, nextCard):
                 availableStacks.append(i)
 
         if len(availableStacks) == 0:
-            returnStats = calculateReturn(board, board.pTurn)
-            drawBoard(board, returnStats=returnStats)
+            drawBoard(board, board.pTurn)
             print('\nPushed Too Far: Busted')
             printCard(nextCard)
             return True
         
-        stackIndex = ai.PlaceInStack(availableStacks, stats, returnStats)
+        stackIndex = ai.PlaceInStack(availableStacks, board.nextCardStats, board.getReturnStats())
         board.placeStack(nextCard, stackIndex)
 
-    returnStats = calculateReturn(board, board.pTurn)
-    stats = calculateStats(board)
-    drawBoard(board, returnStats=returnStats, stats=stats)
+    drawBoard(board, board.pTurn)
     return False
 
 def endgame(board: Board):
@@ -247,19 +154,17 @@ def endgame(board: Board):
     print(f'\n\nPlayer {topPlayer+1} WON with {topPoints} points!!!!')
     exit()
 
-timescale = 0.05
+timescale = 1
 board = Board()
 turn = 0
 while True:
     board.pTurn = turn % board.players
     ai = board.playerAI[board.pTurn]
     board.resetRound()
-    returnStats = calculateReturn(board, board.pTurn)
-    stats = calculateStats(board)
-    drawBoard(board, returnStats=returnStats, stats=stats)
+    drawBoard(board, board.pTurn)
 
     busted = False
-    if ai.DrawOrBank(stats, returnStats) == True:
+    if ai.DrawOrBank(board.nextCardStats, board.getReturnStats()) == True:
         print(f'Player {board.pTurn+1} is drawing')
         time.sleep(2.5 * timescale)
         busted = Draw(board, ai)
@@ -269,10 +174,8 @@ while True:
         time.sleep(2.5 * timescale)
 
     while busted == False:
-        returnStats = calculateReturn(board, board.pTurn)
-        stats = calculateStats(board)
-        drawBoard(board, returnStats=returnStats, stats=stats)
-        if ai.DrawOrCall(stats, returnStats):
+        drawBoard(board, board.pTurn)
+        if ai.DrawOrCall(board.nextCardStats, board.getReturnStats()):
             print(f'Player {board.pTurn+1} is drawing')
             time.sleep(2.5 * timescale)
             busted = Draw(board, ai)
@@ -290,15 +193,13 @@ while True:
 
     pickStrings = []
     if busted == False:
-        returnStats = calculateReturn(board, board.pTurn)
-        stats = calculateStats(board)
-        drawBoard(board, returnStats=returnStats, stats=stats)
+        drawBoard(board, board.pTurn)
         print(f'Player {board.pTurn+1} is picking a stack')
         time.sleep(2.5 * timescale)
-        stackIndex = ai.TakeStack(availableStacks, stats, returnStats)
+        stackIndex = ai.TakeStack(availableStacks, board.nextCardStats, board.getReturnStats())
         newPoints = board.ApplyStack(stackIndex, board.pTurn)
         availableStacks.remove(stackIndex)
-        drawBoard(board, returnStats=returnStats, stats=stats)
+        drawBoard(board, board.pTurn)
         pickStrings.insert(0, f'Player {board.pTurn+1} took stack {stackIndex+1}: {newPoints} points')
         print('\n'.join(pickStrings))
         time.sleep(2.5 * timescale)
@@ -309,17 +210,15 @@ while True:
     
     for p in otherPlayers:
         if len(availableStacks) > 0:
-            returnStats = calculateReturn(board, p)
-            stats = calculateStats(board)
-            drawBoard(board, returnStats=returnStats, stats=stats)
+            drawBoard(board, p)
             print(f'Player {p+1} is picking a stack')
             print('\n'.join(pickStrings))
             time.sleep(2.5 * timescale)
             otherAI = board.playerAI[p]
-            stackIndex = otherAI.TakeStack(availableStacks, stats, returnStats)
+            stackIndex = otherAI.TakeStack(availableStacks, board.nextCardStats, board.getReturnStats(p))
             newPoints = board.ApplyStack(stackIndex, p)
             availableStacks.remove(stackIndex)
-            drawBoard(board, returnStats=returnStats, stats=stats)
+            drawBoard(board, p)
             pickStrings.insert(0, f'Player {p+1} took stack {stackIndex+1}: {newPoints} points')
             print('\n'.join(pickStrings))
             time.sleep(2.5 * timescale)
