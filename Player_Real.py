@@ -1,7 +1,10 @@
 from Player import Player
+from Card import Card
 import inquirer
 
 class PlayerReal(Player):
+    name = 'Real'
+
     # Return true to draw
     def DrawOrBank(self, nextData: dict, returnData: list):
         questions = [
@@ -24,7 +27,7 @@ class PlayerReal(Player):
         answers = inquirer.prompt(questions)
         return answers['draw'] == 'Draw'
     
-    def PlaceInStack(self, stackIds: list[int], nextData: dict, returnData: list):
+    def PlaceInStack(self, card: Card, stacks: list[Card], stackIds: list[int], nextData: dict, returnData: list):
         choices = []
         for i in stackIds:
             choices.append(i+1)

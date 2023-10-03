@@ -4,6 +4,8 @@ from Consts import bcolors, COLORS, COLOR_NAME
 from StatsForNerds import calculateNextCardStats, calculateReturnPointStats
 from Player import Player
 from Player_IDK import PlayerIDK
+from Player_Random import PlayerRandom
+from Player_Greedy import PlayerGreedy
 from Player_Real import PlayerReal
 import random
 
@@ -21,10 +23,9 @@ class Board:
         self.playerInfo: list[Bench] = []
         self.playerStackReturnStats = []
         for i in range(players):
-            self.playerAI.append(PlayerIDK())
             self.playerInfo.append(Bench())
             self.playerStackReturnStats.append(calculateReturnPointStats(self, i))
-        self.playerAI[0] = PlayerReal()
+        self.playerAI = [PlayerGreedy(), PlayerRandom(), PlayerRandom()]
 
         self.resetRound()
 

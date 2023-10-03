@@ -1,8 +1,9 @@
 from Player import Player
 from Card import Card
+import random
 
-class PlayerIDK(Player):
-    name = 'Dumb'
+class PlayerRandom(Player):
+    name = 'Random'
 
     # Return true to draw
     def DrawOrBank(self, nextData: dict, returnData: list):
@@ -10,10 +11,10 @@ class PlayerIDK(Player):
     
     # Return true to draw
     def DrawOrCall(self, nextData: dict, returnData: list):
-        return True
+        return random.choice([True, False])
     
     def PlaceInStack(self, card: Card, stacks: list[Card], stackIds: list[int], nextData: dict, returnData: list):
-        return stackIds[0]
+        return random.choice(stackIds)
     
     def TakeStack(self, stackIds: list[int], nextData: dict, returnData: list):
-        return stackIds[0]
+        return random.choice(stackIds)

@@ -1,4 +1,8 @@
+from Card import Card
+
 class Player:
+    name = 'Player'
+
     # Return true to draw
     def DrawOrBank(self, nextData: dict, returnData: list):
         raise Exception("NotImplementedException")
@@ -7,7 +11,7 @@ class Player:
     def DrawOrCall(self, nextData: dict, returnData: list):
         raise Exception("NotImplementedException")
     
-    def PlaceInStack(self, stacksIds: list[int], nextData: dict, returnData: list):
+    def PlaceInStack(self, card: Card, stacks: list[Card], stackIds: list[int], nextData: dict, returnData: list):
         raise Exception("NotImplementedException")
     
     def TakeStack(self, stackIds: list[int], nextData: dict, returnData: list):

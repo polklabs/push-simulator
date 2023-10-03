@@ -81,6 +81,8 @@ def drawBoard(board: Board, playerTurn:int, nextCard: Card=None):
         else:
             columns.append(f'Player {i+1}')
     x.field_names = columns
+
+    x.add_row(['AI']+[x.name for x in board.playerAI])
     
     for c in range(5):
         points = [f'{COLORS[c]}{COLOR_NAME[c]}{bcolors.ENDC}']
@@ -158,7 +160,7 @@ def Draw(board: Board, ai):
             drawBoard(board, board.pTurn, nextCard)
             return True
         
-        stackIndex = ai.PlaceInStack(availableStacks, board.nextCardStats, board.getReturnStats())
+        stackIndex = ai.PlaceInStack(nextCard, board.stacks, availableStacks, board.nextCardStats, board.getReturnStats())
         board.placeStack(nextCard, stackIndex)
 
     drawBoard(board, board.pTurn)
@@ -176,7 +178,7 @@ def endgame(board: Board):
     drawBoard(board, topPlayer)
     exit()
 
-timescale = 1
+timescale = .2
 board = Board()
 turn = 0
 while True:
@@ -199,7 +201,8 @@ while True:
 
     while busted == False:
         drawBoard(board, board.pTurn)
-        if ai.DrawOrCall(board.nextCardStats, board.getReturnStats()):
+        maxStackLen = max([len(x) for x in board.stacks])
+        if maxStackLen==0 or ai.DrawOrCall(board.nextCardStats, board.getReturnStats()):
             board.addEvent(f'Player {board.pTurn+1}: Drawing')
             drawBoard(board, board.pTurn)
             sleep('draw_before', ai)
