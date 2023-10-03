@@ -2,7 +2,9 @@ from Bench import Bench
 from Card import Card
 from Consts import bcolors, COLORS, COLOR_NAME
 from StatsForNerds import calculateNextCardStats, calculateReturnPointStats
+from Player import Player
 from Player_IDK import PlayerIDK
+from Player_Real import PlayerReal
 import random
 
 class Board:
@@ -15,13 +17,14 @@ class Board:
 
         self.pTurn: int = 0
         self.players: int = players
-        self.playerAI = []
+        self.playerAI: list[Player] = []
         self.playerInfo: list[Bench] = []
         self.playerStackReturnStats = []
         for i in range(players):
             self.playerAI.append(PlayerIDK())
             self.playerInfo.append(Bench())
             self.playerStackReturnStats.append(calculateReturnPointStats(self, i))
+        self.playerAI[0] = PlayerReal()
 
         self.resetRound()
 
@@ -34,6 +37,8 @@ class Board:
         self.stacks: list[list[Card]] = [[],[],[]]
         self.reverse: bool = False
         self.nextCardStats = calculateNextCardStats(self)
+        for i in range(self.players):
+            self.playerStackReturnStats.append(calculateReturnPointStats(self, i))
 
     def rollDie(self):
         return random.choice(['Purple', 'Blue', 'Green', 'Yellow', 'Red', 'None'])
@@ -83,6 +88,9 @@ class Board:
                 points[colorIndex] = 0
             else:
                 self.addEvent(f'Player {playerNum+1}: Rolled {color}, -0 Points')
+        self.stacks[stackIndex] = []
+        for i in range(self.players):
+            self.playerStackReturnStats[i] = calculateReturnPointStats(self, i)
         return newPoints
 
     def getPlayerScore(self, i: int, colorIndex:int=-1):
