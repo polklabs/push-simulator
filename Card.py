@@ -31,14 +31,12 @@ class Card:
                     f'{self.color}|    ◘|{bcolors.ENDC}',
                     f'{self.color}+-----+{bcolors.ENDC}' ]
         
-    def getCardBack(count):
-        counts = str(count)
-        counts += (' '*(4-len(counts)))
+    def getCardBack():
         color = bcolors.ENDC
         return [f'{color}+-----+{bcolors.ENDC}',
                 f'{color}| P   |{bcolors.ENDC}',
                 f'{color}|  US |{bcolors.ENDC}',
-                f'{color}|{counts}H|{bcolors.ENDC}',
+                f'{color}|    H|{bcolors.ENDC}',
                 f'{color}+-----+{bcolors.ENDC}' ]
 
     def getCardEmpty():

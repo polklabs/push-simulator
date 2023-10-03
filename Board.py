@@ -11,6 +11,7 @@ class Board:
         self.reverse: bool = False
         self.deck: list[Card] = self.buildDeck()
         self.discard: list[Card] = []
+        self.events: list[str] = []
 
         self.pTurn: int = 0
         self.players: int = players
@@ -36,6 +37,9 @@ class Board:
 
     def rollDie(self):
         return random.choice(['Purple', 'Blue', 'Green', 'Yellow', 'Red', 'None'])
+    
+    def addEvent(self, event: str):
+        self.events.insert(0,'> ' + event)
 
     def drawCard(self):
         if len(self.deck) == 0:
@@ -61,20 +65,24 @@ class Board:
             self.playerStackReturnStats[i] = calculateReturnPointStats(self, i)
 
     def ApplyStack(self, stackIndex: int, playerNum: int):
+        points = self.playerInfo[playerNum].points
         newPoints = 0
         hasRollCard = False
         for card in self.stacks[stackIndex]:
             if card.type == 'num':
-                self.playerInfo[playerNum].points[COLORS.index(card.color)] += card.number
+                points[COLORS.index(card.color)] += card.number
                 newPoints += card.number
             elif card.type == 'roll':
                 hasRollCard = True
         if hasRollCard == True:
             color = self.rollDie()
-            print(f'Rolled {color}')
             if color != 'None':
-                newPoints -= self.playerInfo[playerNum].points[COLOR_NAME.index(color)]
-                self.playerInfo[playerNum].points[COLOR_NAME.index(color)] = 0
+                colorIndex = COLOR_NAME.index(color)
+                newPoints -= points[colorIndex]
+                self.addEvent(f'Player {playerNum+1}: Rolled {COLORS[colorIndex]}{color}{bcolors.ENDC}, {-points[colorIndex]} Points')
+                points[colorIndex] = 0
+            else:
+                self.addEvent(f'Player {playerNum+1}: Rolled {color}, -0 Points')
         return newPoints
 
     def getPlayerScore(self, i: int, colorIndex:int=-1):
