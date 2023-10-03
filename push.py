@@ -208,6 +208,7 @@ def Draw(board: Board, ai):
     if nextCard == None:
         return False
     returnStats = calculateReturn(board, board.pTurn)
+    stats = calculateStats(board)
     drawBoard(board, nextCard, returnStats=returnStats)
     print(f'\nPlayer {board.pTurn+1} is choosing a stack for card')
     time.sleep(2 * timescale)
@@ -227,7 +228,7 @@ def Draw(board: Board, ai):
             printCard(nextCard)
             return True
         
-        stackIndex = ai.PlaceInStack(availableStacks)
+        stackIndex = ai.PlaceInStack(availableStacks, stats, returnStats)
         board.placeStack(nextCard, stackIndex)
 
     returnStats = calculateReturn(board, board.pTurn)
@@ -258,7 +259,7 @@ while True:
     drawBoard(board, returnStats=returnStats, stats=stats)
 
     busted = False
-    if ai.DrawOrBank() == True:
+    if ai.DrawOrBank(stats, returnStats) == True:
         print(f'Player {board.pTurn+1} is drawing')
         time.sleep(2.5 * timescale)
         busted = Draw(board, ai)
@@ -268,10 +269,10 @@ while True:
         time.sleep(2.5 * timescale)
 
     while busted == False:
-        if ai.DrawOrCall():
-            returnStats = calculateReturn(board, board.pTurn)
-            stats = calculateStats(board)
-            drawBoard(board, returnStats=returnStats, stats=stats)
+        returnStats = calculateReturn(board, board.pTurn)
+        stats = calculateStats(board)
+        drawBoard(board, returnStats=returnStats, stats=stats)
+        if ai.DrawOrCall(stats, returnStats):
             print(f'Player {board.pTurn+1} is drawing')
             time.sleep(2.5 * timescale)
             busted = Draw(board, ai)
@@ -290,15 +291,14 @@ while True:
     pickStrings = []
     if busted == False:
         returnStats = calculateReturn(board, board.pTurn)
-        drawBoard(board, returnStats=returnStats)
+        stats = calculateStats(board)
+        drawBoard(board, returnStats=returnStats, stats=stats)
         print(f'Player {board.pTurn+1} is picking a stack')
         time.sleep(2.5 * timescale)
-        stackIndex = ai.TakeStack(availableStacks)
+        stackIndex = ai.TakeStack(availableStacks, stats, returnStats)
         newPoints = board.ApplyStack(stackIndex, board.pTurn)
-        # board.stacks[stackIndex] = []
-        del availableStacks[stackIndex]
-        returnStats = calculateReturn(board, board.pTurn)
-        drawBoard(board, returnStats=returnStats)
+        availableStacks.remove(stackIndex)
+        drawBoard(board, returnStats=returnStats, stats=stats)
         pickStrings.insert(0, f'Player {board.pTurn+1} took stack {stackIndex+1}: {newPoints} points')
         print('\n'.join(pickStrings))
         time.sleep(2.5 * timescale)
@@ -310,17 +310,16 @@ while True:
     for p in otherPlayers:
         if len(availableStacks) > 0:
             returnStats = calculateReturn(board, p)
-            drawBoard(board, returnStats=returnStats)
+            stats = calculateStats(board)
+            drawBoard(board, returnStats=returnStats, stats=stats)
             print(f'Player {p+1} is picking a stack')
             print('\n'.join(pickStrings))
             time.sleep(2.5 * timescale)
             otherAI = board.playerAI[p]
-            stackIndex = otherAI.TakeStack(availableStacks)
+            stackIndex = otherAI.TakeStack(availableStacks, stats, returnStats)
             newPoints = board.ApplyStack(stackIndex, p)
-            # board.stacks[stackIndex] = []
-            del availableStacks[stackIndex]
-            returnStats = calculateReturn(board, board.pTurn)
-            drawBoard(board, returnStats=returnStats)
+            availableStacks.remove(stackIndex)
+            drawBoard(board, returnStats=returnStats, stats=stats)
             pickStrings.insert(0, f'Player {p+1} took stack {stackIndex+1}: {newPoints} points')
             print('\n'.join(pickStrings))
             time.sleep(2.5 * timescale)
