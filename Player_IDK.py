@@ -1,4 +1,6 @@
-class PlayerIDK:
+from Player import Player
+
+class PlayerIDK(Player):
     # Return true to draw
     def DrawOrBank(self, nextData: dict, returnData: list):
         return True
