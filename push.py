@@ -1,10 +1,14 @@
 from prettytable import PrettyTable
-import random, os, time
+import os, time
 
 from Board import Board
 from Bench import Bench
 from Card import Card
 from Consts import bcolors, COLORS, COLOR_NAME
+
+def sleep(type:str, ai):
+    global timescale
+    time.sleep(ai.SleepTime(type) * timescale)
 
 def printCard(card: Card):
     lines = card.getCard()
@@ -72,7 +76,10 @@ def drawBoard(board: Board, playerTurn:int, nextCard: Card=None):
     x = PrettyTable()
     columns = ['Points']
     for i in range(board.players):
-        columns.append(f'Player {i+1}')
+        if i == board.pTurn:
+            columns.append(f'{bcolors.BOLD}{bcolors.UNDERLINE}Player {i+1}{bcolors.ENDC}')
+        else:
+            columns.append(f'Player {i+1}')
     x.field_names = columns
     
     for c in range(5):
@@ -86,7 +93,7 @@ def drawBoard(board: Board, playerTurn:int, nextCard: Card=None):
     x.add_row(points)
     print(x)
 
-    print(f'\nPlayer {board.pTurn+1}\'s Turn:')
+    # print(f'\nPlayer {board.pTurn+1}\'s Turn:')
     printStacks(board, nextCard)
 
     printReturn(board.getReturnStats(playerTurn))
@@ -115,9 +122,8 @@ def printStats(data):
     totalRows = [col for col in transposed_matrix]
     total += [round(sum(col),2) for col in totalRows[1:-1]] + [data['NUM']]
     x.add_row(total)
-    x.add_row(['ROLL', data['ROLL']]+['']*6)
-    x.add_row(['SWITCH', data['SWITCH']]+['']*6)
-    x.add_row(['BUST', data['BUST']]+['']*6)
+    x.add_row(['']*8)
+    x.add_row(['ROLL', data['ROLL'], '', 'SWITCH', data['SWITCH'], '', 'BUST', data['BUST']])
     print(x)
 
 def printReturn(stats):
@@ -137,7 +143,7 @@ def Draw(board: Board, ai):
     else:
         board.addEvent(f'Player {board.pTurn+1}: Choosing a stack for {nextCard.type}')
     drawBoard(board, board.pTurn, nextCard)
-    time.sleep(2 * timescale)
+    sleep('placeStack_before', ai)
 
     if nextCard.type == 'switch':
         board.reverse = not board.reverse
@@ -177,15 +183,16 @@ while True:
     board.pTurn = turn % board.players
     ai = board.playerAI[board.pTurn]
     board.resetRound()
+    board.addEvent(f'Player {board.pTurn+1}: Start Turn')
     drawBoard(board, board.pTurn)
 
     busted = False
     if ai.DrawOrBank(board.nextCardStats, board.getReturnStats()) == True:
         board.addEvent(f'Player {board.pTurn+1}: Drawing')
         drawBoard(board, board.pTurn)
-        time.sleep(1 * timescale)
+        sleep('draw_before', ai)
         busted = Draw(board, ai)
-        time.sleep(1 * timescale)
+        sleep('draw_after', ai)
     else:
         print('TODO: Bank points')
         time.sleep(2.5 * timescale)
@@ -195,9 +202,9 @@ while True:
         if ai.DrawOrCall(board.nextCardStats, board.getReturnStats()):
             board.addEvent(f'Player {board.pTurn+1}: Drawing')
             drawBoard(board, board.pTurn)
-            time.sleep(1 * timescale)
+            sleep('draw_before', ai)
             busted = Draw(board, ai)
-            time.sleep(2.5 * timescale)
+            sleep('draw_after', ai)
 
             if len(board.deck) == 0:
                 break
@@ -213,13 +220,13 @@ while True:
     if busted == False:
         board.addEvent(f'Player {board.pTurn+1}: Picking a Stack')
         drawBoard(board, board.pTurn)
-        time.sleep(2.5 * timescale)
+        sleep('pickStack_before', ai)
         stackIndex = ai.TakeStack(availableStacks, board.nextCardStats, board.getReturnStats())
         newPoints = board.ApplyStack(stackIndex, board.pTurn)
         availableStacks.remove(stackIndex)
         board.addEvent(f'Player {board.pTurn+1}: Took Stack {stackIndex+1}: {newPoints} Points')
         drawBoard(board, board.pTurn)
-        time.sleep(2.5 * timescale)
+        sleep('pickStack_after', ai)
 
     otherPlayers = [(board.pTurn+1)%board.players, (board.pTurn+2)%board.players]
     if board.reverse == False:
@@ -229,14 +236,14 @@ while True:
         if len(availableStacks) > 0:
             board.addEvent(f'Player {p+1}: Picking a Stack')
             drawBoard(board, p)
-            time.sleep(2.5 * timescale)
             otherAI = board.playerAI[p]
+            sleep('pickStack_before', otherAI)
             stackIndex = otherAI.TakeStack(availableStacks, board.nextCardStats, board.getReturnStats(p))
             newPoints = board.ApplyStack(stackIndex, p)
             availableStacks.remove(stackIndex)
             board.addEvent(f'Player {p+1}: Took Stack {stackIndex+1}: {newPoints} Points')
             drawBoard(board, p)
-            time.sleep(2.5 * timescale)
+            sleep('pickStack_after', otherAI)
 
     # input('Continue:')
     if len(board.deck) == 0:
