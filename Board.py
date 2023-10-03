@@ -1,0 +1,79 @@
+from Bench import Bench
+from Card import Card
+from Consts import bcolors, COLORS, COLOR_NAME
+from Player_IDK import PlayerIDK
+import random
+
+class Board:
+    def __init__(self, players=3):
+        self.pTurn: int = 0
+        self.players: int = players
+        self.playerAI = []
+        self.deck: list[Card] = self.buildDeck()
+        self.discard: list[Card] = []
+        self.playerInfo: list[Bench] = []
+        for i in range(players):
+            self.playerAI.append(PlayerIDK())
+            self.playerInfo.append(Bench())
+        self.resetRound()
+
+    def resetRound(self):
+        self.stacks: list[list[Card]] = [[],[],[]]
+        self.reverse: bool = False
+
+    def rollDie(self):
+        return random.choice(['Purple', 'Blue', 'Green', 'Yellow', 'Red', 'None'])
+
+    def drawCard(self):
+        if len(self.deck) == 0:
+            return None
+        toReturn = self.deck[0]
+        self.deck.remove(toReturn)
+        self.discard.append(toReturn)
+        return toReturn
+    
+    def placeStack(self, card: Card, index: int):
+        if index > 2:
+            return
+        self.stacks[index].append(card)
+
+    def ApplyStack(self, stackIndex: int, playerNum: int):
+        newPoints = 0
+        hasRollCard = False
+        for card in self.stacks[stackIndex]:
+            if card.type == 'num':
+                self.playerInfo[playerNum].points[COLORS.index(card.color)] += card.number
+                newPoints += card.number
+            elif card.type == 'roll':
+                hasRollCard = True
+        if hasRollCard == True:
+            color = self.rollDie()
+            print(f'Rolled {color}')
+            if color != 'None':
+                newPoints -= self.playerInfo[playerNum].points[COLOR_NAME.index(color)]
+                self.playerInfo[playerNum].points[COLOR_NAME.index(color)] = 0
+        return newPoints
+
+    def getPlayerScore(self, i: int, colorIndex:int=-1):
+        if i >= self.players:
+            return 0
+        if colorIndex == -1:
+            return sum(self.playerInfo[i].points)
+        else:
+            return self.playerInfo[i].points[colorIndex]
+        
+    def buildDeck(self):
+        deck = []
+        for i in range(1, 7):
+            for j in range(3):
+                deck.append(Card(bcolors.GREEN, i))
+                deck.append(Card(bcolors.YELLOW, i))
+                deck.append(Card(bcolors.RED, i))
+                deck.append(Card(bcolors.BLUE, i))
+                deck.append(Card(bcolors.PURPLE, i))
+        for i in range(18):
+            deck.append(Card(cardType='roll'))
+        for i in range(12):
+            deck.append(Card(cardType='switch'))
+        random.shuffle(deck)
+        return deck
