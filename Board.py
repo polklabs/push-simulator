@@ -7,6 +7,7 @@ from Player_IDK import PlayerIDK
 from Player_Random import PlayerRandom
 from Player_Greedy import PlayerGreedy
 from Player_Real import PlayerReal
+from Player_Scared import PlayerScared
 import random
 
 class Board:
@@ -25,7 +26,7 @@ class Board:
         for i in range(players):
             self.playerInfo.append(Bench())
             self.playerStackReturnStats.append(calculateReturnPointStats(self, i))
-        self.playerAI = [PlayerGreedy(), PlayerRandom(), PlayerRandom()]
+        self.playerAI = [PlayerGreedy(), PlayerScared(), PlayerRandom()]
 
         self.resetRound()
 

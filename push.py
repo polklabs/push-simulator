@@ -176,79 +176,97 @@ def endgame(board: Board):
             topPoints = pnts
     board.addEvent(f'Player {topPlayer+1}: WON with {topPoints} points!!!!')
     drawBoard(board, topPlayer)
-    exit()
+    return board.playerAI[topPlayer].name
 
-timescale = .2
-board = Board()
-turn = 0
-while True:
-    board.pTurn = turn % board.players
-    ai = board.playerAI[board.pTurn]
-    board.resetRound()
-    board.addEvent(f'Player {board.pTurn+1}: Start Turn')
-    drawBoard(board, board.pTurn)
+timescale = 1
 
-    busted = False
-    if ai.DrawOrBank(board.nextCardStats, board.getReturnStats()) == True:
-        board.addEvent(f'Player {board.pTurn+1}: Drawing')
+def Game():
+    board = Board()
+    turn = 0
+    while True:
+        board.pTurn = turn % board.players
+        ai = board.playerAI[board.pTurn]
+        board.resetRound()
+        board.addEvent(f'Player {board.pTurn+1}: Start Turn')
         drawBoard(board, board.pTurn)
-        sleep('draw_before', ai)
-        busted = Draw(board, ai)
-        sleep('draw_after', ai)
-    else:
-        print('TODO: Bank points')
-        time.sleep(2.5 * timescale)
 
-    while busted == False:
-        drawBoard(board, board.pTurn)
-        maxStackLen = max([len(x) for x in board.stacks])
-        if maxStackLen==0 or ai.DrawOrCall(board.nextCardStats, board.getReturnStats()):
+        busted = False
+        if ai.DrawOrBank(board.nextCardStats, board.getReturnStats()) == True:
             board.addEvent(f'Player {board.pTurn+1}: Drawing')
             drawBoard(board, board.pTurn)
             sleep('draw_before', ai)
             busted = Draw(board, ai)
             sleep('draw_after', ai)
-
-            if len(board.deck) == 0:
-                break
         else:
-            break
+            print('TODO: Bank points')
+            time.sleep(2.5 * timescale)
 
-    availableStacks = []
-    for i in range(3):
-        if len(board.stacks[i]) > 0:
-            availableStacks.append(i)
+        while busted == False:
+            drawBoard(board, board.pTurn)
+            maxStackLen = max([len(x) for x in board.stacks])
+            if maxStackLen==0 or ai.DrawOrCall(board.nextCardStats, board.getReturnStats()):
+                board.addEvent(f'Player {board.pTurn+1}: Drawing')
+                drawBoard(board, board.pTurn)
+                sleep('draw_before', ai)
+                busted = Draw(board, ai)
+                sleep('draw_after', ai)
 
-    pickStrings = []
-    if busted == False:
-        board.addEvent(f'Player {board.pTurn+1}: Picking a Stack')
-        drawBoard(board, board.pTurn)
-        sleep('pickStack_before', ai)
-        stackIndex = ai.TakeStack(availableStacks, board.nextCardStats, board.getReturnStats())
-        newPoints = board.ApplyStack(stackIndex, board.pTurn)
-        availableStacks.remove(stackIndex)
-        board.addEvent(f'Player {board.pTurn+1}: Took Stack {stackIndex+1}: {newPoints} Points')
-        drawBoard(board, board.pTurn)
-        sleep('pickStack_after', ai)
+                if len(board.deck) == 0:
+                    break
+            else:
+                break
 
-    otherPlayers = [(board.pTurn+1)%board.players, (board.pTurn+2)%board.players]
-    if board.reverse == False:
-        otherPlayers.reverse()
-    
-    for p in otherPlayers:
-        if len(availableStacks) > 0:
-            board.addEvent(f'Player {p+1}: Picking a Stack')
-            drawBoard(board, p)
-            otherAI = board.playerAI[p]
-            sleep('pickStack_before', otherAI)
-            stackIndex = otherAI.TakeStack(availableStacks, board.nextCardStats, board.getReturnStats(p))
-            newPoints = board.ApplyStack(stackIndex, p)
+        availableStacks = []
+        for i in range(3):
+            if len(board.stacks[i]) > 0:
+                availableStacks.append(i)
+
+        pickStrings = []
+        if busted == False:
+            board.addEvent(f'Player {board.pTurn+1}: Picking a Stack')
+            drawBoard(board, board.pTurn)
+            sleep('pickStack_before', ai)
+            stackIndex = ai.TakeStack(availableStacks, board.nextCardStats, board.getReturnStats())
+            newPoints = board.ApplyStack(stackIndex, board.pTurn)
             availableStacks.remove(stackIndex)
-            board.addEvent(f'Player {p+1}: Took Stack {stackIndex+1}: {newPoints} Points')
-            drawBoard(board, p)
-            sleep('pickStack_after', otherAI)
+            board.addEvent(f'Player {board.pTurn+1}: Took Stack {stackIndex+1}: {newPoints} Points')
+            drawBoard(board, board.pTurn)
+            sleep('pickStack_after', ai)
 
-    # input('Continue:')
-    if len(board.deck) == 0:
-        endgame(board)
-    turn += 1
+        otherPlayers = [(board.pTurn+1)%board.players, (board.pTurn+2)%board.players]
+        if board.reverse == False:
+            otherPlayers.reverse()
+        
+        for p in otherPlayers:
+            if len(availableStacks) > 0:
+                board.addEvent(f'Player {p+1}: Picking a Stack')
+                drawBoard(board, p)
+                otherAI = board.playerAI[p]
+                sleep('pickStack_before', otherAI)
+                stackIndex = otherAI.TakeStack(availableStacks, board.nextCardStats, board.getReturnStats(p))
+                newPoints = board.ApplyStack(stackIndex, p)
+                availableStacks.remove(stackIndex)
+                board.addEvent(f'Player {p+1}: Took Stack {stackIndex+1}: {newPoints} Points')
+                drawBoard(board, p)
+                sleep('pickStack_after', otherAI)
+
+        # input('Continue:')
+        if len(board.deck) == 0:
+            return endgame(board)
+        turn += 1
+
+def main():
+    wins = dict()
+    for i in range(10):
+        winner = Game()
+        if winner not in wins:
+            wins[winner] = 0
+        wins[winner] += 1
+
+    table = PrettyTable()
+    for c in wins.keys():
+        table.add_column(c, [])
+    table.add_row([wins[c] for c in wins.keys()])
+    print(table)
+
+main()
