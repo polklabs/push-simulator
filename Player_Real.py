@@ -17,7 +17,7 @@ class PlayerReal(Player):
         return answers['draw'] == 'Draw'
     
     # Return true to draw
-    def DrawOrCall(self, nextData: dict, returnData: list):
+    def DrawOrCall(self, stacks: list[Card], nextData: dict, returnData: list):
         questions = [
         inquirer.List('draw',
                         message="Draw Card or Call?",

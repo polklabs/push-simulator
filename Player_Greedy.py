@@ -5,13 +5,16 @@ import random
 class PlayerGreedy(Player):
     name = 'Greedy'
 
+    def __init__(self, bustBreak:int=25):
+        self.bustBreak = bustBreak
+
     # Return true to draw
     def DrawOrBank(self, nextData: dict, returnData: list):
         return True
     
     # Return true to draw
-    def DrawOrCall(self, nextData: dict, returnData: list):
-        if nextData['BUST'] < 25:
+    def DrawOrCall(self, stacks: list[Card], nextData: dict, returnData: list):
+        if nextData['BUST'] <= self.bustBreak:
             return True
         return False
     

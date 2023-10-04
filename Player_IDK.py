@@ -9,7 +9,7 @@ class PlayerIDK(Player):
         return True
     
     # Return true to draw
-    def DrawOrCall(self, nextData: dict, returnData: list):
+    def DrawOrCall(self, stacks: list[Card], nextData: dict, returnData: list):
         return True
     
     def PlaceInStack(self, card: Card, stacks: list[Card], stackIds: list[int], nextData: dict, returnData: list):

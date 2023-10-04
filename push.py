@@ -5,6 +5,13 @@ from Board import Board
 from Bench import Bench
 from Card import Card
 from Consts import bcolors, COLORS, COLOR_NAME, TIMESCALE
+from Player import Player
+from Player_IDK import PlayerIDK
+from Player_Random import PlayerRandom
+from Player_Greedy import PlayerGreedy
+from Player_Real import PlayerReal
+from Player_Scared import PlayerScared
+from Player_Generic import PlayerGeneric
 
 def sleep(type:str, ai):
     time.sleep(ai.SleepTime(type) * TIMESCALE)
@@ -113,6 +120,7 @@ def printEvents(events: list[str]):
 
 def printStats(data):
     x = PrettyTable()
+    x.align = 'r'
     x.field_names = ['%', '1', '2', '3', '4', '5', '6', 'Total']
     for c in range(len(COLORS)):
         r = [COLORS[c]+COLOR_NAME[c]]
@@ -126,16 +134,32 @@ def printStats(data):
     total += [round(sum(col),2) for col in totalRows[1:-1]] + [data['NUM']]
     x.add_row(total)
     x.add_row(['']*8)
-    x.add_row(['ROLL', data['ROLL'], '', 'SWITCH', data['SWITCH'], '', 'BUST', data['BUST']])
+    bustData = data['BUST']
+    if bustData > 0:
+        bustData = f'{bcolors.RED}{bustData}{bcolors.ENDC}'
+    x.add_row(['ROLL', data['ROLL'], '', 'SWITCH', data['SWITCH'], '', 'BUST', bustData])
     print(x)
 
 def printReturn(stats):
     x = PrettyTable()
     x.field_names = [f'Player {stats[-1]+1}', 'Stack 1', 'Stack 2', 'Stack 3']
     x.add_row(['Min Gain']+ [s['min'] for s in stats[:-1]])
-    x.add_row(['Avg Gain']+ [s['average'] for s in stats[:-1]])
+    x.add_row(['Avg Gain']+ [s['avg'] for s in stats[:-1]])
     x.add_row(['Max Gain']+ [s['max'] for s in stats[:-1]])
     print(x)
+
+def printResults(results: dict, currentGame: int, totalGames: int):
+    table = PrettyTable()
+    keys = results.keys()
+    keys = sorted(keys)
+    table.field_names = [f'{currentGame}/{totalGames} Games']+['Player '+str(x+1) for x in keys]
+
+    table.add_row(['Strategy'] + [results[x]['strategy'] for x in keys])
+    table.add_row(['Wins'] + [results[x]['wins'] for x in keys])
+    table.add_row(['Win %'] + [str(round((results[x]['wins']/currentGame)*100,2))+'%' for x in keys])
+    table.add_row(['Avg. Points'] + [round(results[x]['totalPoints']/results[x]['wins'],2) for x in keys])
+        
+    print(table)
 
 def Draw(board: Board, ai):
     nextCard = board.drawCard()
@@ -177,10 +201,14 @@ def endgame(board: Board):
             topPoints = pnts
     board.addEvent(f'Player {topPlayer+1}: WON with {topPoints} points!!!!')
     drawBoard(board, topPlayer)
-    return board.playerAI[topPlayer].name
+    results = dict()
+    results['strategy'] = board.playerAI[topPlayer].name
+    results['playerNum'] = topPlayer
+    results['score'] = topPoints
+    return results
 
-def Game(showGame=True):
-    board = Board(showGame)
+def Game(AI: list[Player], showGame=True):
+    board = Board(showGame, AI)
     turn = 0
     while True:
         board.pTurn = turn % board.players
@@ -203,7 +231,7 @@ def Game(showGame=True):
         while busted == False:
             drawBoard(board, board.pTurn)
             maxStackLen = max([len(x) for x in board.stacks])
-            if maxStackLen==0 or ai.DrawOrCall(board.nextCardStats, board.getReturnStats()):
+            if maxStackLen==0 or ai.DrawOrCall(board.stacks, board.nextCardStats, board.getReturnStats()):
                 board.addEvent(f'Player {board.pTurn+1}: Drawing')
                 drawBoard(board, board.pTurn)
                 sleep('draw_before', ai)
@@ -255,16 +283,19 @@ def Game(showGame=True):
 
 def main():
     wins = dict()
-    for i in range(100):
-        winner = Game(False)
-        if winner not in wins:
-            wins[winner] = 0
-        wins[winner] += 1
+    totalGames = 100
+    for i in range(totalGames):
+        r = Game([PlayerGeneric(0, 'min', 0), PlayerGeneric(15, 'max', 2), PlayerGeneric(10, 'avg', 3)], False)
+        if r['playerNum'] not in wins:
+            wins[r['playerNum']] = dict()
+            wins[r['playerNum']]['wins'] = 0    
+            wins[r['playerNum']]['totalPoints'] = 0
+        wins[r['playerNum']]['strategy'] = r['strategy']
+        wins[r['playerNum']]['totalPoints'] += r['score']
+        wins[r['playerNum']]['wins'] += 1
 
-    table = PrettyTable()
-    for c in wins.keys():
-        table.add_column(c, [])
-    table.add_row([wins[c] for c in wins.keys()])
-    print(table)
+        clearBoard()
+        printResults(wins, i+1, totalGames)
+        # time.sleep(0.001)
 
 main()

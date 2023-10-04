@@ -22,32 +22,45 @@ def chanceToBust(board):
 
 def calculateNextCardStats(board):
     dl = len(board.deck)
+
+    # Pre-calculate all cards the have been seen before
+    drawnCards = {'switch': 0, 'roll': 0, 'num': 0}
+    for n in range(6):
+        for c in range(len(COLORS)):
+            drawnCards[f'{n+1}_{COLOR_NAME[c]}'] = 0
+    for c in board.discard:
+        if c.type == 'switch':
+            drawnCards['switch'] += 1
+        elif c.type == 'roll':
+            drawnCards['roll'] += 1
+        else:
+            drawnCards['num'] += 1
+            key = f'{c.number}_{COLOR_NAME[COLORS.index(c.color)]}'
+            drawnCards[key] += 1
+
     data = dict()
     if dl == 0:
         data['SWITCH'] = 0
     else:
-        alreadyDrawn = len([c for c in board.discard if c.type == 'switch'])
-        data['SWITCH'] = round(((12-alreadyDrawn)/dl)*100,2)
+        data['SWITCH'] = round(((12-drawnCards['switch'])/dl)*100,2)
 
     if dl == 0:
         data['ROLL'] = 0
     else:
-        alreadyDrawn = len([c for c in board.discard if c.type == 'roll'])
-        data['ROLL'] = round(((18-alreadyDrawn)/dl)*100,2)
+        data['ROLL'] = round(((18-drawnCards['roll'])/dl)*100,2)
 
     if dl == 0:
         data['NUM'] = 0
     else:
-        alreadyDrawn = len([c for c in board.discard if c.type == 'num'])
-        data['NUM'] = round(((90-alreadyDrawn)/dl)*100,2)
+        data['NUM'] = round(((90-drawnCards['num'])/dl)*100,2)
 
     for n in range(6):
         for c in range(len(COLORS)):
+            key = f'{n+1}_{COLOR_NAME[c]}'
             if dl == 0:
-                data[f'{n+1}_{COLOR_NAME[c]}'] = 0
+                data[key] = 0
             else:
-                alreadyDrawn = len([card for card in board.discard if card.color == COLORS[c] and card.number == n+1])
-                data[f'{n+1}_{COLOR_NAME[c]}'] = round(((3-alreadyDrawn)/dl)*100, 2)      
+                data[key] = round(((3-drawnCards[key])/dl)*100, 2)      
 
     data['BUST'] = chanceToBust(board)
     return data
@@ -73,7 +86,7 @@ def calculateReturnPointStats(board, playerNum: int):
             maxPoints = 0
             t = 0
 
-        data[i]['average'] = round(totalPoints - t,2)
+        data[i]['avg'] = round(totalPoints - t,2)
         data[i]['min'] = totalPoints - maxPoints
         data[i]['max'] = totalPoints # Always totalPoints cause we're assuming I never get a bad roll
         # print(totalPoints)

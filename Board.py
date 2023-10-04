@@ -3,15 +3,10 @@ from Card import Card
 from Consts import bcolors, COLORS, COLOR_NAME
 from StatsForNerds import calculateNextCardStats, calculateReturnPointStats
 from Player import Player
-from Player_IDK import PlayerIDK
-from Player_Random import PlayerRandom
-from Player_Greedy import PlayerGreedy
-from Player_Real import PlayerReal
-from Player_Scared import PlayerScared
 import random
 
 class Board:
-    def __init__(self, showGame:bool, players=3):
+    def __init__(self, showGame:bool, players:list[Player]):
         self.showGame = showGame
         self.stacks: list[list[Card]] = [[],[],[]]
         self.reverse: bool = False
@@ -20,14 +15,14 @@ class Board:
         self.events: list[str] = []
 
         self.pTurn: int = 0
-        self.players: int = players
+        self.players: int = len(players)
         self.playerAI: list[Player] = []
         self.playerInfo: list[Bench] = []
         self.playerStackReturnStats = []
-        for i in range(players):
+        for i in range(self.players):
             self.playerInfo.append(Bench())
             self.playerStackReturnStats.append(calculateReturnPointStats(self, i))
-        self.playerAI = [PlayerGreedy(), PlayerScared(), PlayerRandom()]
+        self.playerAI = players
 
         self.resetRound()
 
