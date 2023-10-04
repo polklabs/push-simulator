@@ -4,11 +4,10 @@ import os, time
 from Board import Board
 from Bench import Bench
 from Card import Card
-from Consts import bcolors, COLORS, COLOR_NAME
+from Consts import bcolors, COLORS, COLOR_NAME, TIMESCALE
 
 def sleep(type:str, ai):
-    global timescale
-    time.sleep(ai.SleepTime(type) * timescale)
+    time.sleep(ai.SleepTime(type) * TIMESCALE)
 
 def printCard(card: Card):
     lines = card.getCard()
@@ -72,6 +71,8 @@ def clearBoard():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def drawBoard(board: Board, playerTurn:int, nextCard: Card=None):
+    if board.showGame == False:
+        return
     clearBoard()
     x = PrettyTable()
     columns = ['Points']
@@ -178,10 +179,8 @@ def endgame(board: Board):
     drawBoard(board, topPlayer)
     return board.playerAI[topPlayer].name
 
-timescale = 1
-
-def Game():
-    board = Board()
+def Game(showGame=True):
+    board = Board(showGame)
     turn = 0
     while True:
         board.pTurn = turn % board.players
@@ -199,7 +198,7 @@ def Game():
             sleep('draw_after', ai)
         else:
             print('TODO: Bank points')
-            time.sleep(2.5 * timescale)
+            time.sleep(2.5 * TIMESCALE)
 
         while busted == False:
             drawBoard(board, board.pTurn)
@@ -221,8 +220,7 @@ def Game():
             if len(board.stacks[i]) > 0:
                 availableStacks.append(i)
 
-        pickStrings = []
-        if busted == False:
+        if busted == False and len(availableStacks) > 0:
             board.addEvent(f'Player {board.pTurn+1}: Picking a Stack')
             drawBoard(board, board.pTurn)
             sleep('pickStack_before', ai)
@@ -257,8 +255,8 @@ def Game():
 
 def main():
     wins = dict()
-    for i in range(10):
-        winner = Game()
+    for i in range(100):
+        winner = Game(False)
         if winner not in wins:
             wins[winner] = 0
         wins[winner] += 1

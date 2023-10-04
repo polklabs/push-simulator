@@ -10,3 +10,5 @@ class bcolors:
 
 COLORS = [bcolors.PURPLE, bcolors.BLUE, bcolors.GREEN, bcolors.YELLOW, bcolors.RED]
 COLOR_NAME = ['Purple', 'Blue', 'Green', 'Yellow', 'Red']
+
+TIMESCALE = 0

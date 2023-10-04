@@ -11,7 +11,8 @@ from Player_Scared import PlayerScared
 import random
 
 class Board:
-    def __init__(self, players=3):
+    def __init__(self, showGame:bool, players=3):
+        self.showGame = showGame
         self.stacks: list[list[Card]] = [[],[],[]]
         self.reverse: bool = False
         self.deck: list[Card] = self.buildDeck()
